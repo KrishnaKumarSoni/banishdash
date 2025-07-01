@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Mohave:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Mohave:wght@700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="main-container sans-serif-font">
@@ -26,8 +26,11 @@
             <div class="input-panel">
                 <textarea id="input-text" placeholder="Paste your text with em dashes here..."></textarea>
                 <div class="input-stats">
-                    <span id="input-word-count">0 words</span>
-                    <span id="em-dash-count">0 em dashes</span>
+                    <div class="stats-left">
+                        <span id="input-word-count">0 words</span>
+                        <span id="em-dash-count">0 dashes</span>
+                    </div>
+                    <button id="process-btn" class="process-button-small">Process Text</button>
                 </div>
             </div>
             
@@ -41,13 +44,18 @@
             </div>
         </div>
         
-        <!-- Process Button -->
-        <button id="process-btn" class="process-button">Process Text</button>
-        
         <!-- Loading -->
         <div id="loading" class="loading" style="display: none;">
             <div class="spinner"></div>
             Processing...
+        </div>
+        
+        <!-- Custom Popup -->
+        <div id="custom-popup" class="popup-overlay" style="display: none;">
+            <div class="popup-content">
+                <div class="popup-message" id="popup-message"></div>
+                <button class="popup-button" onclick="closePopup()">OK</button>
+            </div>
         </div>
     </div>
 
@@ -69,13 +77,26 @@
         // Initialize counts
         updateInputStats();
 
+        // Custom popup functions
+        function showPopup(message) {
+            document.getElementById('popup-message').textContent = message;
+            document.getElementById('custom-popup').style.display = 'flex';
+        }
+
+        function closePopup() {
+            document.getElementById('custom-popup').style.display = 'none';
+        }
+
         function countWords(text) {
             if (!text.trim()) return 0;
             return text.trim().split(/\s+/).length;
         }
 
         function countEmDashes(text) {
-            return (text.match(/—/g) || []).length;
+            // Count both em dashes (—) and en dashes (–)
+            const emDashes = (text.match(/—/g) || []).length;
+            const enDashes = (text.match(/–/g) || []).length;
+            return emDashes + enDashes;
         }
 
         function updateInputStats() {
@@ -84,7 +105,7 @@
             const dashes = countEmDashes(text);
             
             inputWordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
-            emDashCount.textContent = `${dashes} em dash${dashes !== 1 ? 'es' : ''}`;
+            emDashCount.textContent = `${dashes} dash${dashes !== 1 ? 'es' : ''}`;
         }
 
         function updateOutputStats() {
@@ -97,12 +118,12 @@
             const text = inputText.value.trim();
             
             if (!text) {
-                alert('Please enter some text to process');
+                showPopup('Please enter some text to process');
                 return;
             }
 
             if (countEmDashes(text) === 0) {
-                alert('No em dashes found in the text');
+                showPopup('No dashes found in the text');
                 return;
             }
 
@@ -180,7 +201,7 @@
         function copyToClipboard() {
             const text = outputText.textContent;
             if (!text.trim()) {
-                alert('No text to copy');
+                showPopup('No text to copy');
                 return;
             }
             
@@ -194,7 +215,7 @@
                 }, 2000);
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
-                alert('Failed to copy text to clipboard');
+                showPopup('Failed to copy text to clipboard');
             });
         }
 

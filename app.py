@@ -25,10 +25,10 @@ def process_text():
     
     def generate():
         try:
-            prompt = f"""Remove em dashes (—) from the following text while maintaining natural flow and readability. 
-Replace em dashes with appropriate conjunctions, punctuation, or restructure sentences as needed.
+            prompt = f"""Remove em dashes (—) and en dashes (–) from the following text while maintaining natural flow and readability. 
+Replace these dashes with appropriate conjunctions, punctuation, or restructure sentences as needed.
 Preserve all original formatting, line breaks, spacing, and paragraph structure exactly.
-Only modify the parts with em dashes, leave everything else unchanged.
+Only modify the parts with dashes, leave everything else unchanged.
 
 Text to process:
 {text}"""
