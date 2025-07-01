@@ -10,36 +10,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Mohave:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="main-container">
+    <div class="main-container sans-serif-font">
         <!-- Header -->
         <div class="header">
             <h1 class="title">BanishDash</h1>
             <div class="font-buttons">
-                <div class="font-btn font-btn-1">Ag</div>
-                <div class="font-btn font-btn-2">Ag</div>
+                <div class="font-btn font-btn-1" data-font="serif">Ag</div>
+                <div class="font-btn font-btn-2 active" data-font="sans-serif">Ag</div>
             </div>
         </div>
         
-        <!-- Input Section -->
-        <div class="input-panel">
-            <textarea id="input-text" placeholder="Paste your text with em dashes here..."></textarea>
-        </div>
-        
-        <!-- Output Section -->
-        <div class="output-panel">
-            <div id="output-text" class="output-display"></div>
-        </div>
-        
-        <!-- Input Stats -->
-        <div class="input-stats">
-            <span id="input-word-count">0 words</span>
-            <span id="em-dash-count">0 em dashes</span>
-        </div>
-        
-        <!-- Output Stats -->
-        <div class="output-stats">
-            <span id="output-word-count">0 words</span>
-            <button id="copy-btn" class="copy-button">copy text</button>
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Input Section -->
+            <div class="input-panel">
+                <textarea id="input-text" placeholder="Paste your text with em dashes here..."></textarea>
+                <div class="input-stats">
+                    <span id="input-word-count">0 words</span>
+                    <span id="em-dash-count">0 em dashes</span>
+                </div>
+            </div>
+            
+            <!-- Output Section -->
+            <div class="output-panel">
+                <div id="output-text" class="output-display"></div>
+                <div class="output-stats">
+                    <span id="output-word-count">0 words</span>
+                    <button id="copy-btn" class="copy-button">copy text</button>
+                </div>
+            </div>
         </div>
         
         <!-- Process Button -->
@@ -199,19 +198,26 @@
             });
         }
 
-        // Font size controls
-        document.querySelector('.font-btn-1').addEventListener('click', function() {
-            const currentSize = parseInt(window.getComputedStyle(inputText).fontSize);
-            const newSize = Math.max(12, currentSize - 2);
-            inputText.style.fontSize = newSize + 'px';
-            outputText.style.fontSize = newSize + 'px';
-        });
-
-        document.querySelector('.font-btn-2').addEventListener('click', function() {
-            const currentSize = parseInt(window.getComputedStyle(inputText).fontSize);
-            const newSize = Math.min(24, currentSize + 2);
-            inputText.style.fontSize = newSize + 'px';
-            outputText.style.fontSize = newSize + 'px';
+        // Font toggle controls
+        document.querySelectorAll('.font-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const fontType = this.getAttribute('data-font');
+                const container = document.querySelector('.main-container');
+                
+                // Remove active class from all buttons
+                document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Toggle font family
+                if (fontType === 'serif') {
+                    container.classList.remove('sans-serif-font');
+                    container.classList.add('serif-font');
+                } else {
+                    container.classList.remove('serif-font');
+                    container.classList.add('sans-serif-font');
+                }
+            });
         });
     </script>
 </body>
