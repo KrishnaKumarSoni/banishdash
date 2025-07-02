@@ -16,81 +16,100 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 def index():
     return render_template('index.html')
 
-def get_pass_prompt(pass_number, text):
-    """Get the specific prompt for each pass"""
+def get_analysis_prompt(pass_number, text):
+    """Get the analysis prompt for each pass - identifies issues without fixing them"""
     
     if pass_number == 1:
-        # Technical Cleanup
-        return f"""Remove obvious AI-generated artifacts and disclosure phrases from the following text:
+        # Technical Cleanup Analysis
+        return f"""Analyze the following text and identify all AI-generated artifacts and disclosure phrases. DO NOT fix them, just list what you find:
 
-REMOVE these exact phrases and patterns:
-- "as an AI language model", "as a large language model", "I'm sorry", "as of my last knowledge update"
-- "I hope this helps", "Of course!", "Certainly!", "Would you like", "let me know", "is there anything else"
-- "more detailed breakdown", collaborative communication phrases
-- turn0search0, turn0search1, etc. (and any similar numbered patterns)
-- contentReference[oaicite:0] and similar bracketed references
-- URLs ending with ?utm_source=chatgpt.com (remove only the utm parameter)
-- Fill-in-blank templates like [Entertainer's Name], [Subject Name], etc.
+IDENTIFY these patterns (list specific instances found):
+- AI disclosure phrases: "as an AI language model", "as a large language model", "I'm sorry", "as of my last knowledge update"
+- Collaborative phrases: "I hope this helps", "Of course!", "Certainly!", "Would you like", "let me know", "is there anything else"
+- Technical artifacts: turn0search0, turn0search1, contentReference[oaicite:0], URLs with utm_source=chatgpt.com
+- Template placeholders: [Entertainer's Name], [Subject Name], etc.
 
-Preserve all original formatting, spacing, and paragraph structure. Only remove the specific AI artifacts listed above.
+Format your response as a structured list of issues found. Be specific about what phrases or patterns you detected.
 
-Text to process:
+Text to analyze:
 {text}"""
 
     elif pass_number == 2:
-        # Style Normalization  
-        return f"""Fix formatting and style issues typical of AI-generated text:
+        # Style Analysis
+        return f"""Analyze the following text for formatting and style issues typical of AI-generated content. DO NOT fix them, just identify what needs correction:
 
-STYLE FIXES TO APPLY:
-- Convert curly quotation marks ("" '') to straight quotes ("" '')
-- Convert curly apostrophes (') to straight apostrophes (')
-- Fix spaced em dashes ( — ) to unspaced em dashes (—)
-- Convert Title Case Section Headings to Sentence case headings
-- Remove excessive **boldface** markdown formatting (keep only essential emphasis)
-- Convert markdown formatting to plain text where inappropriate
-- Fix bullet points that use • or - instead of proper formatting
-- Remove emoji decorations from headings (🧠, 🚨, etc.)
+IDENTIFY these formatting issues (list specific instances):
+- Curly quotation marks ("" '') that should be straight quotes
+- Curly apostrophes (') that should be straight
+- Spaced em dashes ( — ) that should be unspaced (—)
+- Title Case Headings that should be sentence case
+- Excessive **boldface** markdown formatting
+- Inappropriate markdown formatting
+- Bullet points using • or - instead of proper formatting
+- Emoji decorations in headings (🧠, 🚨, etc.)
 
-Preserve all content meaning and paragraph structure. Only fix formatting issues.
+List the specific formatting problems you identify.
 
-Text to process:
+Text to analyze:
 {text}"""
 
     elif pass_number == 3:
-        # Language Refinement
-        return f"""Remove promotional language, editorializing, and typical AI phrasing patterns:
+        # Language Analysis
+        return f"""Analyze the following text for promotional language, editorializing, and typical AI phrasing patterns. DO NOT fix them, just identify what needs improvement:
 
-LANGUAGE PATTERNS TO FIX:
-- Remove/replace: "rich cultural heritage", "breathtaking", "stunning natural beauty", "must-visit", "must-see"
-- Remove/replace: "stands as a testament", "plays a vital role", "underscores its importance", "continues to captivate"
-- Remove/replace: "leaves a lasting impact", "watershed moment", "key turning point", "enduring legacy"
-- Remove/replace: "it's important to note", "it is worth", "no discussion would be complete without"
-- Remove/replace: "moreover", "furthermore", "on the other hand" (when overused)
-- Remove/replace: "In summary", "In conclusion" (unless truly needed)
-- Fix "not only...but also" constructions to simpler phrasing
-- Remove promotional tone while keeping factual content
+IDENTIFY these language issues (list specific instances):
+- Promotional phrases: "rich cultural heritage", "breathtaking", "stunning natural beauty", "must-visit"
+- Puffery: "stands as a testament", "plays a vital role", "continues to captivate", "leaves a lasting impact"
+- Editorializing: "it's important to note", "it is worth", "no discussion would be complete"
+- Overused conjunctives: "moreover", "furthermore", "on the other hand"
+- Summary clichés: "In summary", "In conclusion"
+- Awkward constructions: "not only...but also" patterns
 
-Make the language more neutral and encyclopedic. Preserve all facts and information.
+List the specific language problems and suggest better alternatives.
 
-Text to process:
+Text to analyze:
 {text}"""
 
     else:  # pass_number == 4
-        # Flow Polish
-        return f"""Final polish for natural flow and readability:
+        # Flow Analysis
+        return f"""Analyze the text for flow and readability issues. DO NOT fix them, just identify areas that need improvement:
 
-FINAL IMPROVEMENTS:
-- Ensure smooth transitions between sentences after previous edits
-- Fix any awkward phrasing created by earlier passes
-- Maintain encyclopedic neutral tone
-- Ensure sentences flow naturally together
-- Remove any remaining repetitive or redundant phrasing
-- Keep all original facts and information intact
+IDENTIFY these flow issues:
+- Awkward transitions between sentences
+- Repetitive or redundant phrasing
+- Sentences that don't flow naturally together
+- Unclear connections between ideas
+- Any remaining verbose or unnatural language patterns
 
-This is the final pass - make the text read naturally while preserving all content.
+List specific areas where flow could be improved.
 
-Text to process:
+Text to analyze:
 {text}"""
+
+def get_consolidation_prompt(original_text, insights):
+    """Create the final consolidation prompt with original text and all insights"""
+    
+    insights_text = "\n\n".join([f"PASS {i+1} FINDINGS:\n{insight}" for i, insight in enumerate(insights)])
+    
+    return f"""You are a text editor tasked with cleaning up AI-generated artifacts while preserving all original meaning and information.
+
+ORIGINAL TEXT:
+{original_text}
+
+ANALYSIS FROM SPECIALIZED PASSES:
+{insights_text}
+
+INSTRUCTIONS:
+Based on the analysis above, clean up the original text by addressing the identified issues. Your goals:
+
+1. Remove AI disclosure phrases and technical artifacts
+2. Fix formatting and style issues  
+3. Replace promotional/editorializing language with neutral alternatives
+4. Improve flow and readability
+5. PRESERVE all factual content, meaning, and structure
+6. MAINTAIN the original formatting and paragraph breaks
+
+Output the cleaned text directly. Be thorough but conservative - only change what's clearly problematic based on the analysis."""
 
 @app.route('/process', methods=['POST'])
 def process_text():
@@ -101,36 +120,48 @@ def process_text():
     
     def generate():
         try:
-            current_text = text
+            original_text = text
+            insights = []
             
-            # Process through 4 passes
+            # Analysis Phase: Collect insights from each pass
             for pass_num in range(1, 5):
                 # Send pass status
-                yield f"data: {json.dumps({'pass': pass_num, 'status': 'starting'})}\n\n"
+                yield f"data: {json.dumps({'pass': pass_num, 'status': 'analyzing'})}\n\n"
                 
-                prompt = get_pass_prompt(pass_num, current_text)
+                prompt = get_analysis_prompt(pass_num, original_text)
                 
-                stream = client.chat.completions.create(
+                response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[{"role": "user", "content": prompt}],
-                    stream=True,
-                    temperature=0.2
+                    temperature=0.1
                 )
                 
-                pass_result = ""
-                for chunk in stream:
-                    if chunk.choices[0].delta.content is not None:
-                        content = chunk.choices[0].delta.content
-                        pass_result += content
-                        yield f"data: {json.dumps({'pass': pass_num, 'content': content})}\n\n"
+                insight = response.choices[0].message.content
+                insights.append(insight)
                 
-                # Update current_text for next pass
-                current_text = pass_result
-                
-                # Send pass completion
+                # Stream the analysis results
+                yield f"data: {json.dumps({'pass': pass_num, 'content': f'✓ Analysis complete', 'analysis': insight})}\n\n"
                 yield f"data: {json.dumps({'pass': pass_num, 'status': 'completed'})}\n\n"
             
+            # Consolidation Phase: Apply all fixes with fresh LLM instance
+            yield f"data: {json.dumps({'pass': 5, 'status': 'consolidating'})}\n\n"
+            
+            consolidation_prompt = get_consolidation_prompt(original_text, insights)
+            
+            stream = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": consolidation_prompt}],
+                stream=True,
+                temperature=0.2
+            )
+            
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    yield f"data: {json.dumps({'pass': 5, 'content': content})}\n\n"
+            
             # Send final completion
+            yield f"data: {json.dumps({'pass': 5, 'status': 'completed'})}\n\n"
             yield f"data: {json.dumps({'done': True})}\n\n"
             
         except Exception as e:

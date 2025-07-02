@@ -14,269 +14,260 @@
         <!-- Header -->
         <div class="header">
             <h1 class="title">Kleantype</h1>
-            <div class="font-buttons">
-                <div class="font-btn font-btn-1" data-font="serif">Ag</div>
-                <div class="font-btn font-btn-2 active" data-font="sans-serif">Ag</div>
-            </div>
+            <div class="header-subtitle">Advanced AI text cleaner with drift-resistant multi-pass processing</div>
+            <button id="font-toggle" class="font-toggle">Switch to Serif</button>
         </div>
-        
-        <!-- Main Content Area -->
-        <div class="content-area">
+
+        <!-- Main Content -->
+        <div class="content-wrapper">
             <!-- Input Section -->
-            <div class="input-panel">
-                <textarea id="input-text" placeholder="Paste your AI-generated text here to remove catchphrases, dashes, and improve readability..."></textarea>
-                <div class="input-stats">
-                    <div class="stats-left">
-                        <span id="input-word-count">0 words</span>
-                        <span id="input-char-count">0 chars</span>
+            <div class="input-section">
+                <h2>Input Text</h2>
+                <textarea 
+                    id="input-text" 
+                    placeholder="Paste your AI-generated text here. Kleantype will remove AI artifacts, fix formatting issues, and improve readability through intelligent multi-pass analysis..."
+                    rows="12"></textarea>
+                <button id="process-btn" class="process-btn">Clean Text</button>
+            </div>
+
+            <!-- Progress Section (hidden by default) -->
+            <div id="progress-section" class="progress-section" style="display: none;">
+                <h2>Processing Progress</h2>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
                     </div>
-                    <button id="process-btn" class="process-button-small">Clean Text</button>
+                    <div class="progress-text">
+                        <span id="progress-percentage">0%</span>
+                        <span id="progress-status">Initializing...</span>
+                    </div>
+                </div>
+                
+                <!-- Pass Indicators -->
+                <div class="pass-indicators">
+                    <div class="pass-indicator" data-pass="1">
+                        <div class="pass-icon">🔍</div>
+                        <div class="pass-info">
+                            <div class="pass-title">Technical Analysis</div>
+                            <div class="pass-description">Identifying AI artifacts and disclosure phrases</div>
+                        </div>
+                    </div>
+                    <div class="pass-indicator" data-pass="2">
+                        <div class="pass-icon">✏️</div>
+                        <div class="pass-info">
+                            <div class="pass-title">Style Analysis</div>
+                            <div class="pass-description">Detecting formatting and style issues</div>
+                        </div>
+                    </div>
+                    <div class="pass-indicator" data-pass="3">
+                        <div class="pass-icon">📝</div>
+                        <div class="pass-info">
+                            <div class="pass-title">Language Analysis</div>
+                            <div class="pass-description">Finding promotional and editorial language</div>
+                        </div>
+                    </div>
+                    <div class="pass-indicator" data-pass="4">
+                        <div class="pass-icon">🔄</div>
+                        <div class="pass-info">
+                            <div class="pass-title">Flow Analysis</div>
+                            <div class="pass-description">Evaluating readability and transitions</div>
+                        </div>
+                    </div>
+                    <div class="pass-indicator" data-pass="5">
+                        <div class="pass-icon">⚡</div>
+                        <div class="pass-info">
+                            <div class="pass-title">Smart Consolidation</div>
+                            <div class="pass-description">Applying all fixes with fresh AI instance</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
+
             <!-- Output Section -->
-            <div class="output-panel">
-                <div id="output-text" class="output-display"></div>
-                <div class="output-stats">
-                    <span id="output-word-count">0 words</span>
-                    <button id="copy-btn" class="copy-button">copy text</button>
+            <div class="output-section">
+                <div class="output-header">
+                    <h2>Cleaned Text</h2>
+                    <button id="copy-btn" class="copy-btn" style="display: none;">Copy to Clipboard</button>
                 </div>
+                <div id="output-text" class="output-text"></div>
             </div>
         </div>
-        
-        <!-- Loading with Progress -->
+
+        <!-- Loading overlay -->
         <div id="loading" class="loading" style="display: none;">
-            <div class="spinner"></div>
-            <div id="loading-text">Starting cleanup...</div>
-            <div id="progress-bar" class="progress-bar">
-                <div id="progress-fill" class="progress-fill"></div>
-            </div>
-            <div id="pass-info" class="pass-info">
-                <span id="current-pass">Pass 1</span> of 4: <span id="pass-description">Technical cleanup</span>
-            </div>
-        </div>
-        
-        <!-- Custom Popup -->
-        <div id="custom-popup" class="popup-overlay" style="display: none;">
-            <div class="popup-content">
-                <div class="popup-message" id="popup-message"></div>
-                <button class="popup-button" onclick="closePopup()">OK</button>
-            </div>
+            <div id="loading-text">Processing your text...</div>
+            <div id="loading-status">Initializing analysis...</div>
         </div>
     </div>
 
     <script>
-        const inputText = document.getElementById('input-text');
-        const outputText = document.getElementById('output-text');
-        const processBtn = document.getElementById('process-btn');
-        const copyBtn = document.getElementById('copy-btn');
-        const loading = document.getElementById('loading');
-        const loadingText = document.getElementById('loading-text');
-        const progressFill = document.getElementById('progress-fill');
-        const currentPass = document.getElementById('current-pass');
-        const passDescription = document.getElementById('pass-description');
-        const inputWordCount = document.getElementById('input-word-count');
-        const outputWordCount = document.getElementById('output-word-count');
-        const inputCharCount = document.getElementById('input-char-count');
-
-        const passDescriptions = {
-            1: 'Technical cleanup',
-            2: 'Style normalization', 
-            3: 'Language refinement',
-            4: 'Flow polish'
-        };
-
-        // Event listeners
-        processBtn.addEventListener('click', processText);
-        copyBtn.addEventListener('click', copyToClipboard);
-        inputText.addEventListener('input', updateInputStats);
-
-        // Initialize counts
-        updateInputStats();
-
-        // Custom popup functions
-        function showPopup(message) {
-            document.getElementById('popup-message').textContent = message;
-            document.getElementById('custom-popup').style.display = 'flex';
-        }
-
-        function closePopup() {
-            document.getElementById('custom-popup').style.display = 'none';
-        }
-
-        function countWords(text) {
-            if (!text.trim()) return 0;
-            return text.trim().split(/\s+/).length;
-        }
-
-        function updateInputStats() {
-            const text = inputText.value;
-            const words = countWords(text);
-            const chars = text.length;
+        let currentFont = 'sans-serif';
+        
+        // Font toggle functionality
+        document.getElementById('font-toggle').addEventListener('click', function() {
+            const mainContainer = document.querySelector('.main-container');
+            const button = document.getElementById('font-toggle');
             
-            inputWordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
-            inputCharCount.textContent = `${chars} char${chars !== 1 ? 's' : ''}`;
-        }
-
-        function updateOutputStats() {
-            const text = outputText.textContent;
-            const words = countWords(text);
-            outputWordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
-        }
-
-        function updateProgress(passNum, status) {
-            const progressPercent = ((passNum - 1) * 25) + (status === 'completed' ? 25 : 0);
-            progressFill.style.width = progressPercent + '%';
-            
-            currentPass.textContent = `Pass ${passNum}`;
-            passDescription.textContent = passDescriptions[passNum];
-            
-            if (status === 'starting') {
-                loadingText.textContent = `Processing ${passDescriptions[passNum]}...`;
-            } else if (status === 'completed') {
-                loadingText.textContent = `Completed ${passDescriptions[passNum]}`;
+            if (currentFont === 'sans-serif') {
+                mainContainer.classList.remove('sans-serif-font');
+                mainContainer.classList.add('serif-font');
+                button.textContent = 'Switch to Sans-Serif';
+                currentFont = 'serif';
+            } else {
+                mainContainer.classList.remove('serif-font');
+                mainContainer.classList.add('sans-serif-font');
+                button.textContent = 'Switch to Serif';
+                currentFont = 'sans-serif';
             }
-        }
+        });
 
-        function processText() {
-            const text = inputText.value.trim();
+        // Process button functionality
+        document.getElementById('process-btn').addEventListener('click', function() {
+            const inputText = document.getElementById('input-text').value.trim();
             
-            if (!text) {
-                showPopup('Please enter some text to process');
+            if (!inputText) {
+                alert('Please enter some text to process.');
                 return;
             }
 
-            processBtn.disabled = true;
-            processBtn.textContent = 'Cleaning...';
-            loading.style.display = 'flex';
-            outputText.innerHTML = '';
-            outputWordCount.textContent = '0 words';
-            progressFill.style.width = '0%';
+            // Show progress section and hide copy button
+            document.getElementById('progress-section').style.display = 'block';
+            document.getElementById('copy-btn').style.display = 'none';
+            
+            // Reset all pass indicators
+            const passIndicators = document.querySelectorAll('.pass-indicator');
+            passIndicators.forEach(indicator => {
+                indicator.classList.remove('active', 'completed');
+            });
+            
+            // Reset output
+            document.getElementById('output-text').innerHTML = '';
+            
+            // Reset progress
+            updateProgress(0, 'Starting analysis...');
 
+            // Make the API call
             fetch('/process', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ text: text })
+                body: JSON.stringify({ text: inputText })
             })
             .then(response => {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                let currentPassOutput = '';
+                let outputBuffer = '';
 
-                function readStream() {
+                function readChunk() {
                     return reader.read().then(({ done, value }) => {
                         if (done) {
-                            processBtn.disabled = false;
-                            processBtn.textContent = 'Clean Text';
-                            loading.style.display = 'none';
-                            updateOutputStats();
+                            document.getElementById('copy-btn').style.display = 'inline-block';
                             return;
                         }
 
                         const chunk = decoder.decode(value);
                         const lines = chunk.split('\n');
-                        
+
                         lines.forEach(line => {
                             if (line.startsWith('data: ')) {
                                 try {
                                     const data = JSON.parse(line.slice(6));
                                     
-                                    // Handle pass status updates
-                                    if (data.pass && data.status) {
-                                        updateProgress(data.pass, data.status);
-                                        if (data.status === 'starting') {
-                                            currentPassOutput = '';
-                                            if (data.pass === 1) {
-                                                outputText.innerHTML = '';
-                                            }
-                                        }
-                                    }
-                                    
-                                    // Handle streaming content
-                                    if (data.pass && data.content) {
-                                        currentPassOutput += data.content;
-                                        outputText.innerHTML = currentPassOutput;
-                                        updateOutputStats();
-                                    }
-                                    
-                                    // Handle errors
                                     if (data.error) {
-                                        outputText.innerHTML = `Error: ${data.error}`;
-                                        processBtn.disabled = false;
-                                        processBtn.textContent = 'Clean Text';
-                                        loading.style.display = 'none';
+                                        console.error('Error:', data.error);
+                                        updateProgress(100, 'Error occurred');
+                                        return;
                                     }
                                     
-                                    // Handle completion
-                                    if (data.done) {
-                                        processBtn.disabled = false;
-                                        processBtn.textContent = 'Clean Text';
-                                        loading.style.display = 'none';
-                                        updateOutputStats();
+                                    if (data.pass && data.status) {
+                                        handlePassStatus(data.pass, data.status);
                                     }
+                                    
+                                    if (data.pass && data.content) {
+                                        if (data.pass === 5) {
+                                            // Consolidation pass - stream the actual output
+                                            outputBuffer += data.content;
+                                            document.getElementById('output-text').innerHTML = formatOutput(outputBuffer);
+                                        }
+                                        // For analysis passes (1-4), just show completion checkmark
+                                    }
+                                    
+                                    if (data.done) {
+                                        updateProgress(100, 'Complete!');
+                                        document.getElementById('copy-btn').style.display = 'inline-block';
+                                    }
+                                    
                                 } catch (e) {
-                                    // Ignore parse errors for incomplete chunks
+                                    console.error('Parse error:', e);
                                 }
                             }
                         });
 
-                        return readStream();
+                        return readChunk();
                     });
                 }
 
-                return readStream();
+                return readChunk();
             })
             .catch(error => {
                 console.error('Error:', error);
-                outputText.innerHTML = `Error: ${error.message}`;
-                processBtn.disabled = false;
-                processBtn.textContent = 'Clean Text';
-                loading.style.display = 'none';
+                updateProgress(100, 'Error occurred');
             });
-        }
+        });
 
-        function copyToClipboard() {
-            const text = outputText.textContent;
-            if (!text.trim()) {
-                showPopup('No text to copy');
-                return;
-            }
+        function handlePassStatus(passNumber, status) {
+            const passIndicator = document.querySelector(`[data-pass="${passNumber}"]`);
             
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'copied!';
-                copyBtn.style.color = '#6B4510';
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.style.color = '#8A5C13';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                showPopup('Failed to copy text to clipboard');
-            });
+            if (status === 'analyzing') {
+                // Mark pass as active
+                passIndicator.classList.add('active');
+                updateProgress((passNumber - 1) * 20, `Analyzing (Pass ${passNumber}/5)...`);
+            } else if (status === 'consolidating') {
+                // Mark consolidation as active
+                passIndicator.classList.add('active');
+                updateProgress(80, 'Consolidating with fresh AI instance...');
+            } else if (status === 'completed') {
+                // Mark pass as completed
+                passIndicator.classList.remove('active');
+                passIndicator.classList.add('completed');
+                
+                if (passNumber < 5) {
+                    updateProgress(passNumber * 16, `Analysis ${passNumber}/4 complete`);
+                } else {
+                    updateProgress(100, 'Processing complete!');
+                }
+            }
         }
 
-        // Font toggle controls
-        document.querySelectorAll('.font-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const fontType = this.getAttribute('data-font');
-                const container = document.querySelector('.main-container');
+        function updateProgress(percentage, status) {
+            document.getElementById('progress-fill').style.width = percentage + '%';
+            document.getElementById('progress-percentage').textContent = Math.round(percentage) + '%';
+            document.getElementById('progress-status').textContent = status;
+        }
+
+        function formatOutput(text) {
+            // Preserve line breaks and basic formatting
+            return text.replace(/\n/g, '<br>');
+        }
+
+        // Copy to clipboard functionality
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const outputText = document.getElementById('output-text').innerText;
+            
+            navigator.clipboard.writeText(outputText).then(function() {
+                const button = document.getElementById('copy-btn');
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.backgroundColor = '#27AE60';
                 
-                // Remove active class from all buttons
-                document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                // Toggle font family
-                if (fontType === 'serif') {
-                    container.classList.remove('sans-serif-font');
-                    container.classList.add('serif-font');
-                } else {
-                    container.classList.remove('serif-font');
-                    container.classList.add('sans-serif-font');
-                }
+                setTimeout(function() {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '';
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Failed to copy text. Please select and copy manually.');
             });
         });
     </script>
