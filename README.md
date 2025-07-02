@@ -1,20 +1,35 @@
-# BanishDash
+# Kleantype
 
-A simple, effective tool that removes em dashes from text while maintaining natural flow and exact formatting.
+A comprehensive AI text cleaner that removes AI-generated catchphrases, fixes formatting issues, and improves readability through intelligent multi-pass processing.
 
 ## Features
 
-- Removes em dashes intelligently using GPT-4o-mini
-- Maintains original text formatting and structure
-- Real-time streaming output
-- Clean, minimalistic interface
-- Copy to clipboard functionality
+- **4-pass AI cleaning system** using GPT-4o-mini
+  - Pass 1: Remove technical AI artifacts and disclosure phrases
+  - Pass 2: Fix formatting and style issues 
+  - Pass 3: Remove promotional language and editorializing
+  - Pass 4: Polish flow and readability
+- **Real-time streaming** output with progress indicators
+- **Maintains original formatting** and structure
+- **Clean, minimalistic interface** with font toggle
+- **Copy to clipboard** functionality
+- **Progress tracking** through all cleaning passes
+
+## What It Removes
+
+Based on Wikipedia's comprehensive AI catchphrase guide, Kleantype removes:
+- AI disclosure phrases ("as an AI language model", "I hope this helps")
+- Technical artifacts (turn0search0, contentReference patterns)
+- Promotional language ("rich cultural heritage", "breathtaking")
+- Editorializing phrases ("it's important to note", "moreover")
+- Style issues (curly quotes, excessive boldface, emoji headers)
+- Flow problems and redundant phrasing
 
 ## Setup
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/banishdash.git
+git clone https://github.com/KrishnaKumarSoni/banishdash.git
 cd banishdash
 ```
 
@@ -35,7 +50,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 python app.py
 ```
 
-5. Open your browser and go to `http://localhost:5000`
+5. Open your browser and go to `http://localhost:5001`
 
 ## Deployment
 
@@ -48,9 +63,9 @@ This app is configured for Vercel deployment:
 
 ## Usage
 
-1. Paste your text containing em dashes into the input area
-2. Click "Process Text"
-3. Watch as the processed text streams in real-time
-4. Copy the result to your clipboard when done
+1. Paste your AI-generated text into the input area
+2. Click "Clean Text"
+3. Watch as the text is processed through 4 cleaning passes with real-time progress
+4. Copy the cleaned, natural-sounding result to your clipboard
 
-The tool intelligently replaces em dashes with appropriate conjunctions, punctuation, or restructures sentences as needed while preserving all original formatting. 
+Kleantype systematically removes AI artifacts while preserving all factual content and maintaining natural readability. 
