@@ -193,6 +193,7 @@
                 const decoder = new TextDecoder();
                 let finalOutput = '';
                 let isStreaming = false;
+                let streamingResetted = false;
 
                 function readStream() {
                     return reader.read().then(({ done, value }) => {
@@ -217,17 +218,50 @@
                                         updateProgress(data.progress, data.phase || 'processing', data.pass, data.status);
                                     }
                                     
+                                    // Handle retry status - reset streaming when retrying
+                                    if (data.status === 'retry_needed') {
+                                        isStreaming = false;
+                                        finalOutput = '';
+                                        outputText.innerHTML = '<div style="color: #f39c12;">Retrying for better quality...</div>';
+                                    }
+                                    
+                                    // Handle consolidation start - reset streaming state
+                                    if (data.status === 'consolidating' && data.pass === 5) {
+                                        isStreaming = false;
+                                        finalOutput = '';
+                                        outputText.innerHTML = '<div style="color: #666;">Processing with AI...</div>';
+                                    }
+                                    
+                                    // Handle explicit reset signal from backend
+                                    if (data.status === 'reset_output') {
+                                        isStreaming = false;
+                                        streamingResetted = true;
+                                        finalOutput = '';
+                                        outputText.innerHTML = '<div style="color: #666;">Starting fresh attempt...</div>';
+                                    }
+                                    
                                     // Handle streaming content
-                                    if (data.content !== undefined) {
-                                        if (!isStreaming) {
-                                            // First content chunk - clear output and start fresh
+                                    if (data.content !== undefined && data.content !== '') {
+                                        // If we've received a reset signal, only start streaming after it
+                                        if (streamingResetted && !isStreaming) {
+                                            // First content chunk after reset
+                                            finalOutput = '';
+                                            outputText.innerHTML = '';
+                                            isStreaming = true;
+                                            streamingResetted = false;
+                                        } else if (!streamingResetted && !isStreaming) {
+                                            // First content chunk without reset
                                             finalOutput = '';
                                             outputText.innerHTML = '';
                                             isStreaming = true;
                                         }
-                                        finalOutput += data.content;
-                                        outputText.textContent = finalOutput;
-                                        updateOutputStats();
+                                        
+                                        // Only add content if we're in streaming mode and haven't been reset
+                                        if (isStreaming && !streamingResetted) {
+                                            finalOutput += data.content;
+                                            outputText.textContent = finalOutput;
+                                            updateOutputStats();
+                                        }
                                     }
                                     
                                     // Handle errors

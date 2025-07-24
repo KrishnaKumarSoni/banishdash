@@ -59,6 +59,8 @@ def process_text():
                     
                     if attempt > 0:
                         yield f"data: {json.dumps({'pass': 5, 'status': 'retry_needed', 'reason': f'Constraint violations detected. Retrying with stricter settings...', 'progress': 30, 'phase': 'consolidation'})}\n\n"
+                        # Send explicit reset signal
+                        yield f"data: {json.dumps({'pass': 5, 'status': 'reset_output', 'progress': 35, 'phase': 'consolidation'})}\n\n"
                     
                     # Stream AI response
                     stream = client.chat.completions.create(
