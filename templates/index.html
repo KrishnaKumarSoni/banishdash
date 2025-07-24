@@ -241,10 +241,10 @@
                                     }
                                     
                                     // Handle streaming content
-                                    if (data.content !== undefined && data.content !== '') {
+                                    if (data.content !== undefined) {
                                         // If we've received a reset signal, only start streaming after it
                                         if (streamingResetted && !isStreaming) {
-                                            // First content chunk after reset
+                                            // First content chunk after reset - even if empty, start fresh
                                             finalOutput = '';
                                             outputText.innerHTML = '';
                                             isStreaming = true;
@@ -257,7 +257,7 @@
                                         }
                                         
                                         // Only add content if we're in streaming mode and haven't been reset
-                                        if (isStreaming && !streamingResetted) {
+                                        if (isStreaming && !streamingResetted && data.content !== '') {
                                             finalOutput += data.content;
                                             outputText.textContent = finalOutput;
                                             updateOutputStats();
