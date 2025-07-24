@@ -80,11 +80,11 @@
         const inputCharCount = document.getElementById('input-char-count');
 
         const passDescriptions = {
-            1: 'Technical analysis',
-            2: 'Style analysis', 
-            3: 'Language analysis',
-            4: 'Flow analysis',
-            5: 'Smart consolidation'
+            1: 'Pre-processing cleanup',
+            2: 'Content analysis', 
+            3: 'AI transformation',
+            4: 'Post-processing safety',
+            5: 'Finalizing output'
         };
 
         // Event listeners
@@ -125,23 +125,44 @@
             outputWordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
         }
 
-        function updateProgress(passNum, status) {
-            const progressPercent = ((passNum - 1) * 20) + (status === 'completed' ? 20 : 0);
-            progressFill.style.width = progressPercent + '%';
+        function updateProgress(progress, phase, passNum, status) {
+            // Use the progress from backend directly (0-100)
+            progressFill.style.width = `${progress}%`;
             
-            currentPass.textContent = `Pass ${passNum}`;
-            passDescription.textContent = passDescriptions[passNum];
+            // Map backend phases to UI display
+            let displayPass = 1;
+            let description = 'Pre-processing cleanup';
+            
+            if (phase === 'analysis') {
+                displayPass = progress <= 20 ? 1 : 2;
+                description = progress <= 20 ? 'Pre-processing cleanup' : 'Content analysis';
+            } else if (phase === 'consolidation') {
+                if (progress <= 30) {
+                    displayPass = 3;
+                    description = 'AI transformation';
+                } else if (progress <= 95) {
+                    displayPass = 4;
+                    description = 'AI transformation';
+                } else {
+                    displayPass = 5;
+                    description = 'Finalizing output';
+                }
+            } else if (phase === 'completed') {
+                displayPass = 5;
+                description = 'Finalizing output';
+            }
+            
+            currentPass.textContent = `Pass ${displayPass}`;
+            passDescription.textContent = description;
             
             if (status === 'analyzing') {
-                loadingText.textContent = `Processing ${passDescriptions[passNum]}...`;
+                loadingText.textContent = `Processing ${description}...`;
             } else if (status === 'consolidating') {
-                loadingText.textContent = `Consolidating with fresh AI...`;
+                loadingText.textContent = `Transforming with AI...`;
             } else if (status === 'completed') {
-                if (passNum < 5) {
-                    loadingText.textContent = `Completed ${passDescriptions[passNum]}`;
-                } else {
-                    loadingText.textContent = `Processing complete!`;
-                }
+                loadingText.textContent = `Processing complete!`;
+            } else {
+                loadingText.textContent = `${description}...`;
             }
         }
 
@@ -170,7 +191,8 @@
             .then(response => {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                let consolidationOutput = '';
+                let finalOutput = '';
+                let isStreaming = false;
 
                 function readStream() {
                     return reader.read().then(({ done, value }) => {
@@ -190,25 +212,27 @@
                                 try {
                                     const data = JSON.parse(line.slice(6));
                                     
-                                    // Handle pass status updates
-                                    if (data.pass && data.status) {
-                                        updateProgress(data.pass, data.status);
-                                        if (data.status === 'consolidating') {
-                                            consolidationOutput = '';
-                                            outputText.innerHTML = '';
-                                        }
+                                    // Handle progress updates
+                                    if (data.progress !== undefined) {
+                                        updateProgress(data.progress, data.phase || 'processing', data.pass, data.status);
                                     }
                                     
-                                    // Handle streaming content (only for consolidation pass)
-                                    if (data.pass === 5 && data.content) {
-                                        consolidationOutput += data.content;
-                                        outputText.innerHTML = consolidationOutput;
+                                    // Handle streaming content
+                                    if (data.content !== undefined) {
+                                        if (!isStreaming) {
+                                            // First content chunk - clear output and start fresh
+                                            finalOutput = '';
+                                            outputText.innerHTML = '';
+                                            isStreaming = true;
+                                        }
+                                        finalOutput += data.content;
+                                        outputText.textContent = finalOutput;
                                         updateOutputStats();
                                     }
-                                
+                                    
                                     // Handle errors
                                     if (data.error) {
-                                        outputText.innerHTML = `Error: ${data.error}`;
+                                        outputText.innerHTML = `<div style="color: #e74c3c;">Error: ${data.error}</div>`;
                                         processBtn.disabled = false;
                                         processBtn.textContent = 'Clean Text';
                                         loading.style.display = 'none';
@@ -216,6 +240,7 @@
                                     
                                     // Handle completion
                                     if (data.done) {
+                                        isStreaming = false;
                                         processBtn.disabled = false;
                                         processBtn.textContent = 'Clean Text';
                                         loading.style.display = 'none';
